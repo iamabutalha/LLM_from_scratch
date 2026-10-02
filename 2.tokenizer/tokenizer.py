@@ -9,7 +9,32 @@ from transformer_block import Block
 print("Torch version:", torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
 print("GPU name:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
+import sentencepiece as spm
 
+with open("corpus.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+print(text)
+
+spm.SentencePieceTrainer.Train(
+    input="corpus.txt",
+    model_prefix="tokenizer",
+    vocab_size=40,
+    model_type="bpe",
+)
+
+sp = spm.SentencePieceProcessor()
+sp.load("tokenizer.model")
+
+ids = sp.encode(text, out_type=int)
+
+# convert ids to tensor
+data = torch.tensor(ids, dtype=torch.long)
+# print(ids)
+print(data)
+
+
+vocab_size = sp.get_piece_size()
 # corpus = [
 #     "hello friends how are you",
 #     "the tea is very hot",
@@ -112,8 +137,18 @@ for step in range(epochs):
 
 
 
-context = torch.tensor([[word2idx["the"]]], dtype=torch.long)
+# context = torch.tensor([[word2idx["the"]]], dtype=torch.long)
+# out = model.generate(context, max_new_tokens=15)
+
+# print("\nGenerated text:\n")
+# print(" ".join(idx2word[int(i)] for i in out[0]))
+
+context = torch.tensor([sp.encode("hello", out_type=int)], dtype=torch.long)
+
 out = model.generate(context, max_new_tokens=15)
 
 print("\nGenerated text:\n")
-print(" ".join(idx2word[int(i)] for i in out[0]))
+
+generated_id = out[0].tolist()
+generated_text = sp.decode(generated_id)
+print(generated_text)
